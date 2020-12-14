@@ -1,7 +1,6 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/lcos.hpp>
 #include <hpx/include/parallel_for_loop.hpp>
-#include <run_hpx.cpp>
 #include <boost/gil.hpp>
 #include <boost/gil/extension/dynamic_image/any_image.hpp>
 #include <boost/gil/extension/io/jpeg.hpp>
@@ -27,7 +26,7 @@ struct Pixel
     //Member of equation 6
     double gaussian_kernel()
     {
-        return 1 / (2*pi*sigma*sigma) * std::exp(-((x*x)+(y*y))/(2*sigma*sigma));
+        return 1 / (2*M_PI*sigma*sigma) * std::exp(-((x*x)+(y*y))/(2*sigma*sigma));
     }
     
     //Member of equation 6
@@ -36,11 +35,11 @@ struct Pixel
         double sum = 0;
         std::mutex m;
         //Integrate over t for each pixel pair (x,y)
-        hpx::for_loop(hpx::execution::par, 0, src->width(), [&](int t_x){
-        hpx::for_loop(hpx::execution::par, 0, src->height(), [&](int t_y){
+        hpx::for_loop(hpx::parallel::execution::par, 0, src->width(), [&](int t_x){
+        hpx::for_loop(hpx::parallel::execution::par, 0, src->height(), [&](int t_y){
             //It was ambiguous whether we should normalize t around the X or the Y variable of integration
             //Point t(t_x - X.x, t_y - X.y, src);
-            Point t(t_x - Y.x, t_y - Y.y, src);
+            Pixel t(t_x - Y.x, t_y - Y.y, src);
             double diff = ((*src)(x + t.x, y + t.y) - (*src)(Y.x + t.y, Y.y + t.y));
 
             m.lock();
@@ -65,8 +64,8 @@ struct Pixel
         double sum = 0;
         std::mutex m;
         //Integrate over y for each pixel x
-        hpx::for_loop(hpx::execution::par, 0, src->width(), [&](int y_x){
-        hpx::for_loop(hpx::execution::par, 0, src->height(), [&](int y_y){
+        hpx::for_loop(hpx::parallel::execution::par, 0, src->width(), [&](int y_x){
+        hpx::for_loop(hpx::parallel::execution::par, 0, src->height(), [&](int y_y){
             
             m.lock();
             sum += std::exp(-1 * this->weighted_difference({y_x,y_y,src})/(h*h)) * (*src)(y_x, y_y);
@@ -75,8 +74,10 @@ struct Pixel
         });});
 
         return (1./normalizing_factor()) * sum;
-    }
-}
+    
+   }
+
+   };
 
 double init_deblur(int x, int y, gray8c_view_t *src)
 {

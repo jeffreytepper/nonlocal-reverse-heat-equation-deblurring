@@ -22,7 +22,7 @@ struct Pixel
     //Member of equation 6
     double gaussian_kernel()
     {
-        return 1 / (2*pi*sigma*sigma) * std::exp(-((x*x)+(y*y))/(2*sigma*sigma));
+        return 1 / (2*M_PI*sigma*sigma) * std::exp(-((x*x)+(y*y))/(2*sigma*sigma));
     }
     
     //Member of equation 6
@@ -31,14 +31,14 @@ struct Pixel
         double sum = 0;
 
         //Integrate over t for each pixel pair (x,y)
-        for(t_x = 0; t_x < src->width(); t_x++)
+        for(size_t t_x = 0; t_x < src->width(); t_x++)
         {
-            for(t_y = 0; t_y < src->height(); t_y++)
+            for(size_t t_y = 0; t_y < src->height(); t_y++)
             {
                 //It was ambiguous whether we should normalize t around the X or the Y variable of integration
                 //Point t(t_x - X.x, t_y - X.y, src);
-                Point t(t_x - Y.x, t_y - Y.y, src);
-                double diff = ((*src)(x + t.x, y + t.y) - (*src)(Y.x + t.y, Y.y + t.y));
+                Pixel t(t_x - Y.x, t_y - Y.y, src);
+                double diff = ((*src)(x + t_x, y + t_y) - (*src)(Y.x + t_y, Y.y + t_y));
                 sum += t.gaussian_kernel() * diff * diff;
             }
         }
